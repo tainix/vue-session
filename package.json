@@ -1,6 +1,6 @@
 {
-	"name": "sd-vue-session",
-	"version": "1.0.12",
+	"name": "vue-session",
+	"version": "1.0.0",
 	"description": "",
 	"author": "TainiX <tainix@foxmail.com>",
 	"main": "dist/index.js",
