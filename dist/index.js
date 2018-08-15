@@ -89,7 +89,8 @@ exports.__esModule = true;
 //
 
 exports.default = {
-	name: 'ss-input'
+  name: "ss-input",
+  props: "name"
 };
 
 /***/ }),
@@ -100,30 +101,31 @@ exports.default = {
 
 
 exports.__esModule = true;
-exports.SessionInput = exports.Session = exports.install = undefined;
 
-var _Session = __webpack_require__(2);
+var _SessionManager = __webpack_require__(2);
 
-var _Session2 = _interopRequireDefault(_Session);
+var _SessionManager2 = _interopRequireDefault(_SessionManager);
 
-var _sessionInput = __webpack_require__(3);
+var _sessionInput = __webpack_require__(4);
 
 var _sessionInput2 = _interopRequireDefault(_sessionInput);
+
+var _mix = __webpack_require__(12);
+
+var _mix2 = _interopRequireDefault(_mix);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function install(Vue, options) {
-	var session = new _Session2.default(options || {});
+	var manager = new _SessionManager2.default(options);
 
-	Vue.$session = session;
-	Vue.prototype.$session = session;
+	Vue.$session = manager;
+	Vue.prototype.$session = manager;
 
-	return session;
+	Vue.component(options.sessionInputName || 'session-input', _sessionInput2.default);
 }
 
-exports.install = install;
-exports.Session = _Session2.default;
-exports.SessionInput = _sessionInput2.default;
+exports.default = install;
 
 /***/ }),
 /* 2 */
@@ -134,128 +136,185 @@ exports.SessionInput = _sessionInput2.default;
 
 exports.__esModule = true;
 
+var _Session = __webpack_require__(3);
+
+var _Session2 = _interopRequireDefault(_Session);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var NAME_TOKEN = 'token';
-var NAME_EXPIRE = 'expire';
-var NAME_REQUEST = 'request';
+var namespace = '_session';
+
+var options = {
+  tokenParamName: '',
+  storage: null,
+  loginPage: null,
+  fnCheck: null,
+  fnTologin: null,
+  fnLogin: null,
+  fnLogout: null
+};
+
+var storage;
+var sessions = [];
+var current = 0;
+
+function load() {
+
+  console.debug('session data loaded');
+}
+
+function store() {
+
+  console.debug('session data stored');
+}
+
+function switchSession(index) {
+  if (index && index < sessions.length) {
+    current = index;
+  }
+}
+
+function createSession(uri) {
+  return new _Session2.default(options, uri);
+}
+
+function saveSession(session) {
+  sessions.push(session);
+  return Promise.resolve();
+}
+
+function getSession() {
+  var index = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : current;
+
+  if (index < sessions.length) {
+    return sessions[index];
+  }
+}
+
+function putSession(session) {
+  var index = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : current;
+
+  sessions.splice(index, 1, session);
+  return Promise.resolve();
+}
+
+var SessionManager = function () {
+  function SessionManager(config) {
+    _classCallCheck(this, SessionManager);
+
+    options = config;
+
+    load();
+  }
+
+  SessionManager.prototype.toLoginOrContinue = function toLoginOrContinue(to, from, next, loginPage) {
+    this.check().then(next).catch(function () {
+      var session = createSession(to.fullPath);
+      putSession(session);
+
+      if (loginPage) {
+        next(loginPage);
+      } else if (options.tologinFn) {
+        options.tologinFn(to, from, next);
+      }
+    });
+  };
+
+  SessionManager.prototype.check = function check() {
+    var session = getSession();
+    if (!session) {
+      return Promise.reject();
+    }
+
+    var token = session.getToken();
+    if (!!token && options.checkFn) {
+      return options.checkFn(token).catch(this.logout);
+    }
+
+    return !!token ? Promise.resolve() : Promise.reject();
+  };
+
+  SessionManager.prototype.login = function login(token) {
+    var session = getSession();
+    session.saveToken(token);
+
+    return Promise.resolve(session.removeRequest());
+  };
+
+  SessionManager.prototype.logout = function logout() {
+    var token = getSession().getToken();
+    putSession(null);
+
+    if (options.logoutFn) {
+      return options.logoutFn(token);
+    } else {
+      return Promise.resolve();
+    }
+  };
+
+  SessionManager.prototype.stamp = function stamp(uri) {
+    var hasQuery = uri.indexOf('?') !== -1;
+    return uri + (hasQuery ? '&' : '?') + options.tokenParamName + '=' + getSession().getToken();
+  };
+
+  return SessionManager;
+}();
+
+exports.default = SessionManager;
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+exports.__esModule = true;
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Session = function () {
-	function Session() {
-		var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    function Session() {
+        var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+        var uri = arguments[1];
 
-		_classCallCheck(this, Session);
+        _classCallCheck(this, Session);
 
-		this.id = config.id || Date.now();
-		this.namespace = 'session';
-		this.expire = 1000 * 60 * 30;
-		this.storage = config.storage || window.sessionStorage;
+        this.saveRequest(uri);
+    }
 
-		this.checkFn = config.check;
-		this.tologinFn = config.tologin;
-		this.loginFn = config.login;
-		this.logoutFn = config.logout;
+    Session.prototype.getToken = function getToken() {
+        return this.token;
+    };
 
-		this.tokenParamName = config.tokenParamName || 'x-auth-token';
-	}
+    Session.prototype.saveToken = function saveToken(token) {
+        this.token = token;
+    };
 
-	Session.prototype.wrapKey = function wrapKey(key) {
-		return this.namespace + '-' + key;
-		//		return `${ns}-${id}-${key}`
-	};
+    Session.prototype.saveRequest = function saveRequest(uri) {
+        this.savedRequest = uri;
+    };
 
-	Session.prototype.getToken = function getToken() {
-		return this.token || this.storage.getItem(this.wrapKey(NAME_TOKEN));
-	};
+    Session.prototype.removeRequest = function removeRequest() {
+        var uri = this.savedRequest;
+        this.savedRequest = null;
+        return uri;
+    };
 
-	Session.prototype.setToken = function setToken(t) {
-		if (!!t) {
-			this.token = t;
-			this.storage.setItem(this.wrapKey(NAME_TOKEN), t);
-		}
-	};
+    Session.prototype.clear = function clear() {
+        this.token = null;
+        this.savedRequest = null;
+    };
 
-	Session.prototype.getRequest = function getRequest() {
-		return this.storage.getItem(this.wrapKey(NAME_REQUEST));
-	};
-
-	Session.prototype.setRequest = function setRequest(uri) {
-		this.storage.setItem(this.wrapKey(NAME_REQUEST), uri);
-	};
-
-	Session.prototype.removeRequest = function removeRequest() {
-		var uri = this.getRequest();
-		uri && this.storage.removeItem(this.wrapKey(NAME_REQUEST));
-		return uri;
-	};
-
-	Session.prototype.toLoginOrContinue = function toLoginOrContinue(to, from, next, loginPage) {
-		var _this = this;
-
-		this.check().then(next).catch(function () {
-			_this.setRequest(to.fullPath);
-
-			if (loginPage) {
-				next(loginPage);
-			} else if (_this.tologinFn) {
-				_this.tologinFn(to, from, next, _this);
-			}
-		});
-	};
-
-	Session.prototype.check = function check() {
-		var t = this.getToken();
-
-		if (!!t && this.checkFn) {
-			return this.checkFn(t, this).catch(this.clear);
-		}
-
-		return !!t ? Promise.resolve() : Promise.reject();
-	};
-
-	Session.prototype.login = function login(t) {
-		this.setToken(t);
-
-		return Promise.resolve(this.removeRequest());
-	};
-
-	Session.prototype.logout = function logout() {
-		var token = this.getToken();
-		this.clear();
-
-		if (this.logoutFn) {
-			return this.logoutFn(token, this);
-		} else {
-			return Promise.resolve();
-		}
-	};
-
-	Session.prototype.clear = function clear() {
-		this.token = null;
-
-		this.storage.removeItem(this.wrapKey(NAME_TOKEN));
-		this.storage.removeItem(this.wrapKey(NAME_EXPIRE));
-		this.storage.removeItem(this.wrapKey(NAME_REQUEST));
-	};
-
-	Session.prototype.stamp = function stamp(uri) {
-		var hasQuery = uri.indexOf('?') !== -1;
-		return uri + (hasQuery ? '&' : '?') + this.tokenParamName + '=' + this.getToken();
-	};
-
-	Session.prototype.getTokenMap = function getTokenMap() {
-		var obj = {};
-		obj[this.tokenParamName] = this.getToken();
-		return obj;
-	};
-
-	return Session;
+    return Session;
 }();
 
 exports.default = Session;
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -263,13 +322,13 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_13_7_2_vue_loader_lib_selector_type_script_index_0_session_input_vue__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_13_7_2_vue_loader_lib_selector_type_script_index_0_session_input_vue___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_13_7_2_vue_loader_lib_selector_type_script_index_0_session_input_vue__);
 /* harmony namespace reexport (unknown) */ for(var __WEBPACK_IMPORT_KEY__ in __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_13_7_2_vue_loader_lib_selector_type_script_index_0_session_input_vue__) if(__WEBPACK_IMPORT_KEY__ !== 'default') (function(key) { __webpack_require__.d(__webpack_exports__, key, function() { return __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_13_7_2_vue_loader_lib_selector_type_script_index_0_session_input_vue__[key]; }) }(__WEBPACK_IMPORT_KEY__));
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_13_7_2_vue_loader_lib_template_compiler_index_id_data_v_e2959e86_hasScoped_false_buble_transforms_node_modules_vue_loader_13_7_2_vue_loader_lib_selector_type_template_index_0_session_input_vue__ = __webpack_require__(10);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_13_7_2_vue_loader_lib_template_compiler_index_id_data_v_e2959e86_hasScoped_false_buble_transforms_node_modules_vue_loader_13_7_2_vue_loader_lib_selector_type_template_index_0_session_input_vue__ = __webpack_require__(11);
 var disposed = false
 function injectStyle (ssrContext) {
   if (disposed) return
-  __webpack_require__(4)
+  __webpack_require__(5)
 }
-var normalizeComponent = __webpack_require__(9)
+var normalizeComponent = __webpack_require__(10)
 /* script */
 
 
@@ -313,17 +372,17 @@ if (false) {(function () {
 
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(5);
+var content = __webpack_require__(6);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(7)("bba017b6", content, false, {});
+var update = __webpack_require__(8)("bba017b6", content, false, {});
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
@@ -339,10 +398,10 @@ if(false) {
 }
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(6)(false);
+exports = module.exports = __webpack_require__(7)(false);
 // imports
 
 
@@ -353,7 +412,7 @@ exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
 
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports) {
 
 /*
@@ -435,7 +494,7 @@ function toComment(sourceMap) {
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -454,7 +513,7 @@ if (typeof DEBUG !== 'undefined' && DEBUG) {
   ) }
 }
 
-var listToStyles = __webpack_require__(8)
+var listToStyles = __webpack_require__(9)
 
 /*
 type StyleObject = {
@@ -663,7 +722,7 @@ function applyToTag (styleElement, obj) {
 
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports) {
 
 /**
@@ -696,7 +755,7 @@ module.exports = function listToStyles (parentId, list) {
 
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports) {
 
 /* globals __VUE_SSR_CONTEXT__ */
@@ -805,7 +864,7 @@ module.exports = function normalizeComponent (
 
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -830,6 +889,21 @@ if (false) {
     require("vue-loader/node_modules/vue-hot-reload-api")      .rerender("data-v-e2959e86", esExports)
   }
 }
+
+/***/ }),
+/* 12 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var mix = {
+    created: function created() {},
+    beforeRouteEnter: function beforeRouteEnter(to, from, next) {
+
+        Vue.$session.toLoginOrContinue(to, from, next);
+    }
+};
 
 /***/ })
 /******/ ]);
