@@ -1,6 +1,6 @@
 import SessionManager from './SessionManager'
 import SessionInput from './session-input.vue'
-import Mix from './mix'
+import mixin from './mixin'
 
 function install(Vue, options) {
 	var manager = new SessionManager(options);
@@ -8,8 +8,8 @@ function install(Vue, options) {
 	Vue.$session = manager
 	Vue.prototype.$session = manager
 
-
 	Vue.component(options.sessionInputName || 'session-input', SessionInput)
+	Vue.mixin(mixin)
 }
 
 export default install

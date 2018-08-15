@@ -6,8 +6,8 @@
 
 <script>
 export default {
-  name: "ss-input",
-  props: "name"
+  name: "session-input",
+  props: ["name"]
 };
 </script>
 

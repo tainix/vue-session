@@ -89,8 +89,8 @@ exports.__esModule = true;
 //
 
 exports.default = {
-  name: "ss-input",
-  props: "name"
+  name: "session-input",
+  props: ["name"]
 };
 
 /***/ }),
@@ -110,9 +110,9 @@ var _sessionInput = __webpack_require__(4);
 
 var _sessionInput2 = _interopRequireDefault(_sessionInput);
 
-var _mix = __webpack_require__(12);
+var _mixin = __webpack_require__(12);
 
-var _mix2 = _interopRequireDefault(_mix);
+var _mixin2 = _interopRequireDefault(_mixin);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -123,6 +123,7 @@ function install(Vue, options) {
 	Vue.prototype.$session = manager;
 
 	Vue.component(options.sessionInputName || 'session-input', _sessionInput2.default);
+	Vue.mixin(_mixin2.default);
 }
 
 exports.default = install;
@@ -898,10 +899,14 @@ if (false) {
 
 
 var mix = {
-    created: function created() {},
     beforeRouteEnter: function beforeRouteEnter(to, from, next) {
-
-        Vue.$session.toLoginOrContinue(to, from, next);
+        if (to.matched.some(function (record) {
+            return record.meta.requiresAuth;
+        })) {
+            Vue.$session.toLoginOrContinue(to, from, next);
+        } else {
+            next();
+        }
     }
 };
 
