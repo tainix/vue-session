@@ -93,7 +93,8 @@ class SessionManager {
     return !!token ? Promise.resolve() : Promise.reject()
   }
 
-  login(token) {
+  login(resp) {
+    let token = resp.headers[options.tokenParamName];
     var session = getSession()
     session.saveToken(token)
 

@@ -243,7 +243,8 @@ var SessionManager = function () {
     return !!token ? Promise.resolve() : Promise.reject();
   };
 
-  SessionManager.prototype.login = function login(token) {
+  SessionManager.prototype.login = function login(resp) {
+    var token = resp.headers[options.tokenParamName];
     var session = getSession();
     session.saveToken(token);
 
