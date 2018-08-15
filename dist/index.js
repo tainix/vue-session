@@ -173,12 +173,6 @@ function store() {
   console.debug('session data stored');
 }
 
-function switchSession(index) {
-  if (index && index < sessions.length) {
-    current = index;
-  }
-}
-
 function createSession(uri) {
   return new _Session2.default(options, uri);
 }
@@ -213,6 +207,16 @@ var SessionManager = function () {
 
     load();
   }
+
+  SessionManager.prototype.switchSession = function switchSession(index) {
+    if (index && index < sessions.length) {
+      current = index;
+    }
+  };
+
+  SessionManager.prototype.getToken = function getToken() {
+    return getSession().getToken();
+  };
 
   SessionManager.prototype.toLoginOrContinue = function toLoginOrContinue(to, from, next, loginPage) {
     this.check().then(next).catch(function () {

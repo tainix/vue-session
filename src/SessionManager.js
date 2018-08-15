@@ -26,12 +26,6 @@ function store() {
   console.debug('session data stored')
 }
 
-function switchSession(index) {
-  if (index && index < sessions.length) {
-    current = index
-  }
-}
-
 function createSession(uri) {
   return new Session(options, uri)
 }
@@ -60,6 +54,16 @@ class SessionManager {
     options = config
 
     load()
+  }
+
+   switchSession(index) {
+    if (index && index < sessions.length) {
+      current = index
+    }
+  }
+
+  getToken(){
+    return getSession().getToken()
   }
 
   toLoginOrContinue(to, from, next, loginPage) {
