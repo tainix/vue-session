@@ -10,6 +10,8 @@ function install(Vue, options) {
 
 	Vue.component(options.sessionInputName || 'session-input', SessionInput)
 	Vue.mixin(mixin)
+
+	window.onunload = manager.exit
 }
 
 export default install

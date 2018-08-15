@@ -54,6 +54,8 @@ function putSession(session, index = current) {
 
 class SessionManager {
 
+  exit = store
+
   constructor(config) {
     options = config
 

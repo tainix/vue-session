@@ -124,6 +124,8 @@ function install(Vue, options) {
 
 	Vue.component(options.sessionInputName || 'session-input', _sessionInput2.default);
 	Vue.mixin(_mixin2.default);
+
+	window.onunload = manager.exit;
 }
 
 exports.default = install;
@@ -204,6 +206,8 @@ function putSession(session) {
 var SessionManager = function () {
   function SessionManager(config) {
     _classCallCheck(this, SessionManager);
+
+    this.exit = store;
 
     options = config;
 
