@@ -1,17 +1,15 @@
-import Session from './Session'
+import SessionManager from './SessionManager'
 import SessionInput from './session-input.vue'
+import Mix from './mix'
 
 function install(Vue, options) {
-	const session = new Session(options || {})
+	var manager = new SessionManager(options);
 
-	Vue.$session = session
-	Vue.prototype.$session = session
+	Vue.$session = manager
+	Vue.prototype.$session = manager
 
-	return session
+
+	Vue.component(options.sessionInputName || 'session-input', SessionInput)
 }
 
-export {
-	install,
-	Session,
-	SessionInput
-}
+export default install

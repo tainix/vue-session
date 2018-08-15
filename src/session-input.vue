@@ -5,11 +5,11 @@
 </template>
 
 <script>
-	export default {
-		name: 'ss-input'
-	}
+export default {
+  name: "ss-input",
+  props: "name"
+};
 </script>
 
 <style>
-
 </style>
