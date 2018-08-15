@@ -48,21 +48,19 @@ function putSession(session, index = current) {
 
 class SessionManager {
 
-  exit = store
-
   constructor(config) {
     options = config
 
     load()
   }
 
-   switchSession(index) {
+  switchSession(index) {
     if (index && index < sessions.length) {
       current = index
     }
   }
 
-  getToken(){
+  getToken() {
     return getSession().getToken()
   }
 
@@ -116,6 +114,10 @@ class SessionManager {
   stamp(uri) {
     const hasQuery = uri.indexOf('?') !== -1
     return uri + (hasQuery ? '&' : '?') + options.tokenParamName + '=' + getSession().getToken()
+  }
+
+  exit() {
+    store()
   }
 
 }

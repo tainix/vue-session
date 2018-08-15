@@ -201,8 +201,6 @@ var SessionManager = function () {
   function SessionManager(config) {
     _classCallCheck(this, SessionManager);
 
-    this.exit = store;
-
     options = config;
 
     load();
@@ -266,6 +264,10 @@ var SessionManager = function () {
   SessionManager.prototype.stamp = function stamp(uri) {
     var hasQuery = uri.indexOf('?') !== -1;
     return uri + (hasQuery ? '&' : '?') + options.tokenParamName + '=' + getSession().getToken();
+  };
+
+  SessionManager.prototype.exit = function exit() {
+    store();
   };
 
   return SessionManager;
