@@ -26,32 +26,14 @@ function store() {
   console.debug('session data stored')
 }
 
-function createSession(uri) {
-  return new Session(options, uri)
-}
-
-function saveSession(session) {
-  sessions.push(session)
-  return Promise.resolve(session)
-}
-
-function getSession(create, index = current) {
-  if (index < sessions.length) {
-    return Promise.resolve(sessions[index])
-  }
-
+function saveSession(session, create) {
   if (create) {
-    var session = createSession()
-    putSession(session)
-    return Promise.resolve(session)
+    sessions.push(session)
+  } else {
+    sessions.splice(index, 1, session)
   }
 
-  return Promise.reject()
-}
-
-function putSession(session, index = current) {
-  sessions.splice(index, 1, session)
-  return Promise.resolve()
+  return Promise.resolve(session)
 }
 
 class SessionManager {
@@ -68,49 +50,57 @@ class SessionManager {
     }
   }
 
-  getToken() {
-    return getSession().then(session => session.getToken())
+  getSession(create, index = current) {
+    if (index < sessions.length) {
+      return Promise.resolve(sessions[index])
+    }
+
+    if (create) {
+      var session = new Session(options)
+      return saveSession(session)
+    }
+
+    return Promise.reject()
   }
 
-  toLoginOrContinue(to, from, next, loginPage) {
-    this.check()
-      .then(next)
-      .catch(() => {
-        var session = createSession(to.fullPath)
-        putSession(session)
+  getToken() {
+    return this.getSession().then(session => session.getToken())
+  }
 
-        if (loginPage) {
-          next(loginPage)
-        } else if (options.tologinFn) {
-          options.tologinFn(to, from, next)
-        }
-      })
+  toLoginOrContinue(to, from, next) {
+    this.check().then(next).catch(() => {
+      this.getSession(true).then(session => session.saveRequest(to.fullPath))
+
+      if (options.loginPage) {
+        next(options.loginPage)
+      } else if (options.tologinFn) {
+        options.tologinFn(to, from, next)
+      }
+    })
   }
 
   check() {
-    return this.getToken()
-      .then(token => options.checkFn(token).catch(this.logout))
+    return this.getToken().then(token => options.checkFn(token).catch(this.logout))
   }
 
   login(resp) {
     let token = resp.headers[options.tokenParamName]
-    return getSession(true).then(session => {
+    return this.getSession(true).then(session => {
       session.saveToken(token)
       return session.removeRequest()
     })
   }
 
   logout() {
-    return this.getToken
-      .then(token => {
-        putSession(null)
+    return this.getToken.then(token => {
+      saveSession(null)
 
-        if (options.logoutFn) {
-          return options.logoutFn(token)
-        } else {
-          return Promise.resolve()
-        }
-      })
+      if (options.logoutFn) {
+        return options.logoutFn(token)
+      } else {
+        return Promise.resolve()
+      }
+    })
   }
 
   stamp(uri) {

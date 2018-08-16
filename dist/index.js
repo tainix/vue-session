@@ -173,36 +173,14 @@ function store() {
   console.debug('session data stored');
 }
 
-function createSession(uri) {
-  return new _Session2.default(options, uri);
-}
-
-function saveSession(session) {
-  sessions.push(session);
-  return Promise.resolve(session);
-}
-
-function getSession(create) {
-  var index = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : current;
-
-  if (index < sessions.length) {
-    return Promise.resolve(sessions[index]);
-  }
-
+function saveSession(session, create) {
   if (create) {
-    var session = createSession();
-    putSession(session);
-    return Promise.resolve(session);
+    sessions.push(session);
+  } else {
+    sessions.splice(index, 1, session);
   }
 
-  return Promise.reject();
-}
-
-function putSession(session) {
-  var index = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : current;
-
-  sessions.splice(index, 1, session);
-  return Promise.resolve();
+  return Promise.resolve(session);
 }
 
 var SessionManager = function () {
@@ -220,19 +198,37 @@ var SessionManager = function () {
     }
   };
 
+  SessionManager.prototype.getSession = function getSession(create) {
+    var index = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : current;
+
+    if (index < sessions.length) {
+      return Promise.resolve(sessions[index]);
+    }
+
+    if (create) {
+      var session = new _Session2.default(options);
+      return saveSession(session);
+    }
+
+    return Promise.reject();
+  };
+
   SessionManager.prototype.getToken = function getToken() {
-    return getSession().then(function (session) {
+    return this.getSession().then(function (session) {
       return session.getToken();
     });
   };
 
-  SessionManager.prototype.toLoginOrContinue = function toLoginOrContinue(to, from, next, loginPage) {
-    this.check().then(next).catch(function () {
-      var session = createSession(to.fullPath);
-      putSession(session);
+  SessionManager.prototype.toLoginOrContinue = function toLoginOrContinue(to, from, next) {
+    var _this = this;
 
-      if (loginPage) {
-        next(loginPage);
+    this.check().then(next).catch(function () {
+      _this.getSession(true).then(function (session) {
+        return session.saveRequest(to.fullPath);
+      });
+
+      if (options.loginPage) {
+        next(options.loginPage);
       } else if (options.tologinFn) {
         options.tologinFn(to, from, next);
       }
@@ -240,16 +236,16 @@ var SessionManager = function () {
   };
 
   SessionManager.prototype.check = function check() {
-    var _this = this;
+    var _this2 = this;
 
     return this.getToken().then(function (token) {
-      return options.checkFn(token).catch(_this.logout);
+      return options.checkFn(token).catch(_this2.logout);
     });
   };
 
   SessionManager.prototype.login = function login(resp) {
     var token = resp.headers[options.tokenParamName];
-    return getSession(true).then(function (session) {
+    return this.getSession(true).then(function (session) {
       session.saveToken(token);
       return session.removeRequest();
     });
@@ -257,7 +253,7 @@ var SessionManager = function () {
 
   SessionManager.prototype.logout = function logout() {
     return this.getToken.then(function (token) {
-      putSession(null);
+      saveSession(null);
 
       if (options.logoutFn) {
         return options.logoutFn(token);
