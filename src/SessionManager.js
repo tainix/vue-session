@@ -50,7 +50,7 @@ function saveSession(session, create) {
 class SessionManager {
 
   constructor(config) {
-    options = merge(config, options)
+    options = merge(options, config)
 
     load()
   }
@@ -130,12 +130,14 @@ class SessionManager {
 
   stampUri(uri) {
     var t = this.getToken()
-    return uri + ((uri.indexOf('?') !== -1) ? '&' : '?') + options.tokenParamName + '=' + t
+    return t ? uri + ((uri.indexOf('?') !== -1) ? '&' : '?') + options.tokenParamName + '=' + t : uri
   }
 
   stampHeader(headers) {
     var t = this.getToken()
-    headers[options.tokenParamName] = t
+    if(t) {
+      headers[options.tokenParamName] = t
+    }
   }
 
   exit() {

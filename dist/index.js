@@ -1054,7 +1054,7 @@ var SessionManager = function () {
   function SessionManager(config) {
     _classCallCheck(this, SessionManager);
 
-    options = (0, _merge2.default)(config, options);
+    options = (0, _merge2.default)(options, config);
 
     load();
   }
@@ -1138,12 +1138,14 @@ var SessionManager = function () {
 
   SessionManager.prototype.stampUri = function stampUri(uri) {
     var t = this.getToken();
-    return uri + (uri.indexOf('?') !== -1 ? '&' : '?') + options.tokenParamName + '=' + t;
+    return t ? uri + (uri.indexOf('?') !== -1 ? '&' : '?') + options.tokenParamName + '=' + t : uri;
   };
 
   SessionManager.prototype.stampHeader = function stampHeader(headers) {
     var t = this.getToken();
-    headers[options.tokenParamName] = t;
+    if (t) {
+      headers[options.tokenParamName] = t;
+    }
   };
 
   SessionManager.prototype.exit = function exit() {
