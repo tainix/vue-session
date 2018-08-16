@@ -166,7 +166,10 @@ var current = 0;
 function load() {
   var item = storage.getItem(namespace);
   if (item) {
-    sessions.push(JSON.parse(item));
+    JSON.parse(item).forEach(function (s) {
+      var session = new _Session2.default(s);
+      saveSession(session, true);
+    });
   }
 
   console.debug('session data loaded');
@@ -303,42 +306,42 @@ exports.__esModule = true;
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Session = function () {
-    function Session() {
-        var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-        var uri = arguments[1];
+  function Session() {
+    var data = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-        _classCallCheck(this, Session);
+    _classCallCheck(this, Session);
 
-        this.saveRequest(uri);
-    }
+    this.saveToken(data.token);
+    this.saveRequest(data.uri);
+  }
 
-    Session.prototype.getToken = function getToken() {
-        return Promise.resolve(this.token);
-    };
+  Session.prototype.getToken = function getToken() {
+    return Promise.resolve(this.token);
+  };
 
-    Session.prototype.saveToken = function saveToken(token) {
-        this.token = token;
-        return Promise.resolve();
-    };
+  Session.prototype.saveToken = function saveToken(token) {
+    this.token = token;
+    return Promise.resolve();
+  };
 
-    Session.prototype.saveRequest = function saveRequest(uri) {
-        this.savedRequest = uri;
-        return Promise.resolve();
-    };
+  Session.prototype.saveRequest = function saveRequest(uri) {
+    this.savedRequest = uri;
+    return Promise.resolve();
+  };
 
-    Session.prototype.removeRequest = function removeRequest() {
-        var uri = this.savedRequest;
-        this.savedRequest = null;
-        return Promise.resolve(uri);
-    };
+  Session.prototype.removeRequest = function removeRequest() {
+    var uri = this.savedRequest;
+    this.savedRequest = null;
+    return Promise.resolve(uri);
+  };
 
-    Session.prototype.clear = function clear() {
-        this.token = null;
-        this.savedRequest = null;
-        return Promise.resolve();
-    };
+  Session.prototype.clear = function clear() {
+    this.token = null;
+    this.savedRequest = null;
+    return Promise.resolve();
+  };
 
-    return Session;
+  return Session;
 }();
 
 exports.default = Session;

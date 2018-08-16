@@ -19,7 +19,10 @@ var current = 0
 function load() {
   var item = storage.getItem(namespace)
   if(item) {
-    sessions.push(JSON.parse(item))
+    JSON.parse(item).forEach(s => {
+      var session = new Session(s)
+      saveSession(session, true)
+    })
   }
 
   console.debug('session data loaded')
