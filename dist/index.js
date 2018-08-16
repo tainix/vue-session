@@ -1019,44 +1019,38 @@ var options = {
 var sessions = [];
 var current = 0;
 
-function load() {
-  var item = options.storage.getItem(namespace);
-  if (item) {
-    JSON.parse(item).forEach(function (s) {
-      var session = new _Session2.default(s);
-      saveSession(session, true);
-    });
-  }
-
-  console.debug('session data loaded');
-}
-
-function store() {
-  if (sessions.length) {
-    options.storage.setItem(namespace, JSON.stringify(sessions));
-  }
-
-  console.debug('session data stored');
-}
-
-function saveSession(session, create) {
-  if (create) {
-    sessions.push(session);
-  } else {
-    sessions.splice(current, 1, session);
-  }
-
-  return Promise.resolve(session);
-}
-
 var SessionManager = function () {
   function SessionManager(config) {
     _classCallCheck(this, SessionManager);
 
-    options = (0, _merge2.default)(options, config);
+    options = (0, _merge2.default)(this, options, config);
 
-    load();
+    this.load();
   }
+
+  SessionManager.prototype.load = function load() {
+    var _this = this;
+
+    var item = this.storage.getItem(namespace);
+    if (item) {
+      JSON.parse(item).forEach(function (s) {
+        var session = new _Session2.default(s);
+        _this.saveSession(session, true);
+      });
+    }
+
+    console.debug('session data loaded');
+  };
+
+  SessionManager.prototype.saveSession = function saveSession(session, create) {
+    if (create) {
+      sessions.push(session);
+    } else {
+      sessions.splice(current, 1, session);
+    }
+
+    return Promise.resolve(session);
+  };
 
   SessionManager.prototype.switchSession = function switchSession(index) {
     if (index && index < sessions.length) {
@@ -1073,7 +1067,7 @@ var SessionManager = function () {
 
     if (create) {
       var session = new _Session2.default(options);
-      saveSession(session);
+      this.saveSession(session);
       return session;
     }
 
@@ -1090,16 +1084,16 @@ var SessionManager = function () {
   };
 
   SessionManager.prototype.toLoginOrContinue = function toLoginOrContinue(to, from, next) {
-    var _this = this;
+    var _this2 = this;
 
     this.check().then(next).catch(function () {
-      var session = _this.getSession(true);
+      var session = _this2.getSession(true);
       session.saveRequest(to.fullPath);
 
-      if (options.tologinFn) {
-        options.tologinFn(to, from, next);
-      } else if (options.loginPage) {
-        next(options.loginPage);
+      if (_this2.tologinFn) {
+        _this2.tologinFn(to, from, next);
+      } else if (_this2.loginPage) {
+        next(_this2.loginPage);
       }
     });
   };
@@ -1107,15 +1101,15 @@ var SessionManager = function () {
   SessionManager.prototype.check = function check() {
     var token = this.getToken();
 
-    if (token && options.checkFn) {
-      return options.checkFn(token).catch(this.logout);
+    if (token && this.checkFn) {
+      return this.checkFn(token).catch(this.logout);
     }
 
     return Promise.reject();
   };
 
   SessionManager.prototype.login = function login(resp) {
-    var token = resp.headers[options.tokenParamName];
+    var token = resp.headers[this.tokenParamName];
 
     var session = this.getSession(true);
     session.saveToken(token);
@@ -1123,32 +1117,36 @@ var SessionManager = function () {
     return session.removeRequest();
   };
 
-  SessionManager.prototype.logout = function logout() {
-    var token = this.getToken();
-
-    saveSession(null);
-
-    if (token && options.logoutFn) {
-      return options.logoutFn(token);
-    }
-
-    return Promise.resolve();
-  };
-
   SessionManager.prototype.stampUri = function stampUri(uri) {
     var t = this.getToken();
-    return t ? uri + (uri.indexOf('?') !== -1 ? '&' : '?') + options.tokenParamName + '=' + t : uri;
+    return t ? uri + (uri.indexOf('?') !== -1 ? '&' : '?') + this.tokenParamName + '=' + t : uri;
   };
 
   SessionManager.prototype.stampHeader = function stampHeader(headers) {
     var t = this.getToken();
     if (t) {
-      headers[options.tokenParamName] = t;
+      headers[this.tokenParamName] = t;
     }
   };
 
+  SessionManager.prototype.logout = function logout() {
+    var token = this.getToken();
+
+    this.saveSession(null);
+
+    if (token && this.logoutFn) {
+      return this.logoutFn(token);
+    }
+
+    return Promise.resolve();
+  };
+
   SessionManager.prototype.exit = function exit() {
-    store();
+    if (sessions.length) {
+      this.storage.setItem(namespace, JSON.stringify(sessions));
+    }
+
+    console.debug('session data stored');
   };
 
   return SessionManager;

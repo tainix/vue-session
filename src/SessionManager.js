@@ -16,42 +16,34 @@ var options = {
 var sessions = []
 var current = 0
 
-function load() {
-  var item = options.storage.getItem(namespace)
-  if(item) {
-    JSON.parse(item).forEach(s => {
-      var session = new Session(s)
-      saveSession(session, true)
-    })
-  }
-
-  console.debug('session data loaded')
-}
-
-function store() {
-  if(sessions.length) {
-    options.storage.setItem(namespace, JSON.stringify(sessions))
-  }
-
-  console.debug('session data stored')
-}
-
-function saveSession(session, create) {
-  if(create) {
-    sessions.push(session)
-  } else {
-    sessions.splice(current, 1, session)
-  }
-
-  return Promise.resolve(session)
-}
-
 class SessionManager {
 
   constructor(config) {
-    options = merge(options, config)
+    options = merge(this, options, config)
 
-    load()
+    this.load()
+  }
+
+  load() {
+    var item = this.storage.getItem(namespace)
+    if(item) {
+      JSON.parse(item).forEach(s => {
+        var session = new Session(s)
+        this.saveSession(session, true)
+      })
+    }
+
+    console.debug('session data loaded')
+  }
+
+  saveSession(session, create) {
+    if(create) {
+      sessions.push(session)
+    } else {
+      sessions.splice(current, 1, session)
+    }
+
+    return Promise.resolve(session)
   }
 
   switchSession(index) {
@@ -67,7 +59,7 @@ class SessionManager {
 
     if(create) {
       var session = new Session(options)
-      saveSession(session)
+      this.saveSession(session)
       return session
     }
 
@@ -88,10 +80,10 @@ class SessionManager {
       var session = this.getSession(true)
       session.saveRequest(to.fullPath)
 
-      if(options.tologinFn) {
-        options.tologinFn(to, from, next)
-      } else if(options.loginPage) {
-        next(options.loginPage)
+      if(this.tologinFn) {
+        this.tologinFn(to, from, next)
+      } else if(this.loginPage) {
+        next(this.loginPage)
       }
     })
   }
@@ -99,15 +91,15 @@ class SessionManager {
   check() {
     var token = this.getToken()
 
-    if(token && options.checkFn) {
-      return options.checkFn(token).catch(this.logout)
+    if(token && this.checkFn) {
+      return this.checkFn(token).catch(this.logout)
     }
 
     return Promise.reject()
   }
 
   login(resp) {
-    let token = resp.headers[options.tokenParamName]
+    let token = resp.headers[this.tokenParamName]
 
     var session = this.getSession(true)
     session.saveToken(token)
@@ -115,32 +107,36 @@ class SessionManager {
     return session.removeRequest()
   }
 
-  logout() {
-    var token = this.getToken()
-
-    saveSession(null)
-
-    if(token && options.logoutFn) {
-      return options.logoutFn(token)
-    }
-
-    return Promise.resolve()
-  }
-
   stampUri(uri) {
     var t = this.getToken()
-    return t ? uri + ((uri.indexOf('?') !== -1) ? '&' : '?') + options.tokenParamName + '=' + t : uri
+    return t ? uri + ((uri.indexOf('?') !== -1) ? '&' : '?') + this.tokenParamName + '=' + t : uri
   }
 
   stampHeader(headers) {
     var t = this.getToken()
     if(t) {
-      headers[options.tokenParamName] = t
+      headers[this.tokenParamName] = t
     }
   }
 
+  logout() {
+    var token = this.getToken()
+
+    this.saveSession(null)
+
+    if(token && this.logoutFn) {
+      return this.logoutFn(token)
+    }
+
+    return Promise.resolve()
+  }
+
   exit() {
-    store()
+    if(sessions.length) {
+      this.storage.setItem(namespace, JSON.stringify(sessions))
+    }
+
+    console.debug('session data stored')
   }
 
 }
