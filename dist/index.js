@@ -263,9 +263,16 @@ var SessionManager = function () {
     });
   };
 
-  SessionManager.prototype.stamp = function stamp(uri) {
-    var hasQuery = uri.indexOf('?') !== -1;
-    return uri + (hasQuery ? '&' : '?') + options.tokenParamName + '=' + getSession().getToken();
+  SessionManager.prototype.stampUri = function stampUri(uri) {
+    return this.getToken().then(function (t) {
+      return uri + (uri.indexOf('?') !== -1 ? '&' : '?') + options.tokenParamName + '=' + t;
+    });
+  };
+
+  SessionManager.prototype.stampHeader = function stampHeader(headers) {
+    return this.getToken().then(function (t) {
+      return headers[options.tokenParamName] = t;
+    });
   };
 
   SessionManager.prototype.exit = function exit() {

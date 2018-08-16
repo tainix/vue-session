@@ -27,7 +27,7 @@ function store() {
 }
 
 function saveSession(session, create) {
-  if (create) {
+  if(create) {
     sessions.push(session)
   } else {
     sessions.splice(current, 1, session)
@@ -45,17 +45,17 @@ class SessionManager {
   }
 
   switchSession(index) {
-    if (index && index < sessions.length) {
+    if(index && index < sessions.length) {
       current = index
     }
   }
 
   getSession(create, index = current) {
-    if (index < sessions.length) {
+    if(index < sessions.length) {
       return Promise.resolve(sessions[index])
     }
 
-    if (create) {
+    if(create) {
       var session = new Session(options)
       return saveSession(session)
     }
@@ -71,9 +71,9 @@ class SessionManager {
     this.check().then(next).catch(() => {
       this.getSession(true).then(session => session.saveRequest(to.fullPath))
 
-      if (options.loginPage) {
+      if(options.loginPage) {
         next(options.loginPage)
-      } else if (options.tologinFn) {
+      } else if(options.tologinFn) {
         options.tologinFn(to, from, next)
       }
     })
@@ -95,7 +95,7 @@ class SessionManager {
     return this.getToken.then(token => {
       saveSession(null)
 
-      if (options.logoutFn) {
+      if(options.logoutFn) {
         return options.logoutFn(token)
       } else {
         return Promise.resolve()
@@ -103,9 +103,12 @@ class SessionManager {
     })
   }
 
-  stamp(uri) {
-    const hasQuery = uri.indexOf('?') !== -1
-    return uri + (hasQuery ? '&' : '?') + options.tokenParamName + '=' + getSession().getToken()
+  stampUri(uri) {
+    return this.getToken().then(t => uri + ((uri.indexOf('?') !== -1) ? '&' : '?') + options.tokenParamName + '=' + t)
+  }
+
+  stampHeader(headers) {
+    return this.getToken().then(t => headers[options.tokenParamName] = t)
   }
 
   exit() {
