@@ -1016,12 +1016,11 @@ var options = {
   fnLogout: null
 };
 
-var storage = window.sessionStorage;
 var sessions = [];
 var current = 0;
 
 function load() {
-  var item = storage.getItem(namespace);
+  var item = options.storage.getItem(namespace);
   if (item) {
     JSON.parse(item).forEach(function (s) {
       var session = new _Session2.default(s);
@@ -1034,7 +1033,7 @@ function load() {
 
 function store() {
   if (sessions.length) {
-    storage.setItem(namespace, JSON.stringify(sessions));
+    options.storage.setItem(namespace, JSON.stringify(sessions));
   }
 
   console.debug('session data stored');
