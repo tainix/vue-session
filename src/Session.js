@@ -2,7 +2,7 @@ class Session {
 
   constructor(data = {}) {
     this.saveToken(data.token)
-    this.saveRequest(data.uri)
+    this.saveRequest(data.savedRequest)
   }
 
   getToken() {

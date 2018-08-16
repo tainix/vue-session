@@ -312,7 +312,7 @@ var Session = function () {
     _classCallCheck(this, Session);
 
     this.saveToken(data.token);
-    this.saveRequest(data.uri);
+    this.saveRequest(data.savedRequest);
   }
 
   Session.prototype.getToken = function getToken() {
