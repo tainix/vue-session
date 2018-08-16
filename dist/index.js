@@ -179,15 +179,22 @@ function createSession(uri) {
 
 function saveSession(session) {
   sessions.push(session);
-  return Promise.resolve();
+  return Promise.resolve(session);
 }
 
-function getSession() {
-  var index = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : current;
+function getSession(create) {
+  var index = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : current;
 
   if (index < sessions.length) {
     return Promise.resolve(sessions[index]);
   }
+
+  if (create) {
+    var session = createSession();
+    putSession(session);
+    return Promise.resolve(session);
+  }
+
   return Promise.reject();
 }
 
@@ -242,7 +249,7 @@ var SessionManager = function () {
 
   SessionManager.prototype.login = function login(resp) {
     var token = resp.headers[options.tokenParamName];
-    return getSession().then(function (session) {
+    return getSession(true).then(function (session) {
       session.saveToken(token);
       return session.removeRequest();
     });

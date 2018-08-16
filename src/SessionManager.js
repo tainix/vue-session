@@ -32,13 +32,20 @@ function createSession(uri) {
 
 function saveSession(session) {
   sessions.push(session)
-  return Promise.resolve()
+  return Promise.resolve(session)
 }
 
-function getSession(index = current) {
+function getSession(create, index = current) {
   if (index < sessions.length) {
     return Promise.resolve(sessions[index])
   }
+
+  if (create) {
+    var session = createSession()
+    putSession(session)
+    return Promise.resolve(session)
+  }
+
   return Promise.reject()
 }
 
@@ -87,7 +94,7 @@ class SessionManager {
 
   login(resp) {
     let token = resp.headers[options.tokenParamName]
-    return getSession().then(session => {
+    return getSession(true).then(session => {
       session.saveToken(token)
       return session.removeRequest()
     })
