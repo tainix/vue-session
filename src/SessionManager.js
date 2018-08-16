@@ -25,9 +25,9 @@ class SessionManager {
   }
 
   load() {
-    var item = this.storage.getItem(namespace)
-    if(item) {
-      JSON.parse(item).forEach(s => {
+    var data = this.storage.getItem(namespace)
+    if(data) {
+      JSON.parse(data).forEach(s => {
         var session = new Session(s)
         this.saveSession(session, true)
       })

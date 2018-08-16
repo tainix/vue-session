@@ -971,15 +971,17 @@ var _mixin2 = _interopRequireDefault(_mixin);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function install(Vue, options) {
-	var manager = new _SessionManager2.default(options);
+  var manager = new _SessionManager2.default(options);
 
-	Vue.$session = manager;
-	Vue.prototype.$session = manager;
+  Vue.$session = manager;
+  Vue.prototype.$session = manager;
 
-	Vue.component(options.sessionInputName || 'session-input', _sessionInput2.default);
-	Vue.mixin(_mixin2.default);
+  Vue.component(options.sessionInputName || 'session-input', _sessionInput2.default);
+  Vue.mixin(_mixin2.default);
 
-	window.onunload = manager.exit;
+  window.onunload = function () {
+    return manager.exit;
+  };
 }
 
 exports.default = install;
@@ -1031,9 +1033,9 @@ var SessionManager = function () {
   SessionManager.prototype.load = function load() {
     var _this = this;
 
-    var item = this.storage.getItem(namespace);
-    if (item) {
-      JSON.parse(item).forEach(function (s) {
+    var data = this.storage.getItem(namespace);
+    if (data) {
+      JSON.parse(data).forEach(function (s) {
         var session = new _Session2.default(s);
         _this.saveSession(session, true);
       });
