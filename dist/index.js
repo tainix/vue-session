@@ -1023,7 +1023,7 @@ var SessionManager = function () {
   function SessionManager(config) {
     _classCallCheck(this, SessionManager);
 
-    options = (0, _merge2.default)(this, options, config);
+    (0, _merge2.default)(this, options, config);
 
     this.load();
   }
@@ -1066,7 +1066,7 @@ var SessionManager = function () {
     }
 
     if (create) {
-      var session = new _Session2.default(options);
+      var session = new _Session2.default(this);
       this.saveSession(session);
       return session;
     }

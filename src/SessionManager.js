@@ -19,7 +19,7 @@ var current = 0
 class SessionManager {
 
   constructor(config) {
-    options = merge(this, options, config)
+    merge(this, options, config)
 
     this.load()
   }
@@ -58,7 +58,7 @@ class SessionManager {
     }
 
     if(create) {
-      var session = new Session(options)
+      var session = new Session(this)
       this.saveSession(session)
       return session
     }
