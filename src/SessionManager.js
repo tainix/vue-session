@@ -1,14 +1,15 @@
+import merge from "loadsh/merge"
+
 import Session from './Session'
 
 const namespace = 'tainix/vue-session'
 
 var options = {
-  tokenParamName: '',
-  storage: null,
-  loginPage: null,
+  tokenParamName: 'session',
+  storage: window.sessionStorage,
+  loginPage: '/login',
   fnCheck: null,
   fnTologin: null,
-  fnLogin: null,
   fnLogout: null
 }
 
@@ -49,7 +50,7 @@ function saveSession(session, create) {
 class SessionManager {
 
   constructor(config) {
-    options = config
+    options = merge(options, config)
 
     load()
   }
@@ -88,10 +89,10 @@ class SessionManager {
       var session = this.getSession(true)
       session.saveRequest(to.fullPath)
 
-      if(options.loginPage) {
-        next(options.loginPage)
-      } else if(options.tologinFn) {
+      if(options.tologinFn) {
         options.tologinFn(to, from, next)
+      } else if(options.loginPage) {
+        next(options.loginPage)
       }
     })
   }
