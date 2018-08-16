@@ -5,10 +5,6 @@ class Session {
     this.saveRequest(data.savedRequest)
   }
 
-  getToken() {
-    return Promise.resolve(this.token)
-  }
-
   saveToken(token) {
     this.token = token
     return Promise.resolve()

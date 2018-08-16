@@ -147,7 +147,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var namespace = '_session';
+var namespace = 'tainix/vue-session';
 
 var options = {
   tokenParamName: '',
@@ -212,30 +212,33 @@ var SessionManager = function () {
     var index = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : current;
 
     if (index < sessions.length) {
-      return Promise.resolve(sessions[index]);
+      return sessions[index];
     }
 
     if (create) {
       var session = new _Session2.default(options);
-      return saveSession(session);
+      saveSession(session);
+      return session;
     }
 
-    return Promise.reject();
+    return null;
   };
 
   SessionManager.prototype.getToken = function getToken() {
-    return this.getSession().then(function (session) {
-      return session.getToken();
-    });
+    var session = this.getSession();
+    if (session) {
+      return session.token;
+    }
+
+    return null;
   };
 
   SessionManager.prototype.toLoginOrContinue = function toLoginOrContinue(to, from, next) {
     var _this = this;
 
     this.check().then(next).catch(function () {
-      _this.getSession(true).then(function (session) {
-        return session.saveRequest(to.fullPath);
-      });
+      var session = _this.getSession(true);
+      session.saveRequest(to.fullPath);
 
       if (options.loginPage) {
         next(options.loginPage);
@@ -246,43 +249,44 @@ var SessionManager = function () {
   };
 
   SessionManager.prototype.check = function check() {
-    var _this2 = this;
+    var token = this.getToken();
 
-    return this.getToken().then(function (token) {
-      return options.checkFn(token).catch(_this2.logout);
-    });
+    if (token && options.checkFn) {
+      return options.checkFn(token).catch(this.logout);
+    }
+
+    return Promise.reject();
   };
 
   SessionManager.prototype.login = function login(resp) {
     var token = resp.headers[options.tokenParamName];
-    return this.getSession(true).then(function (session) {
-      session.saveToken(token);
-      return session.removeRequest();
-    });
+
+    var session = this.getSession(true);
+    session.saveToken(token);
+
+    return session.removeRequest();
   };
 
   SessionManager.prototype.logout = function logout() {
-    return this.getToken.then(function (token) {
-      saveSession(null);
+    var token = this.getToken();
 
-      if (options.logoutFn) {
-        return options.logoutFn(token);
-      } else {
-        return Promise.resolve();
-      }
-    });
+    saveSession(null);
+
+    if (token && options.logoutFn) {
+      return options.logoutFn(token);
+    }
+
+    return Promise.resolve();
   };
 
   SessionManager.prototype.stampUri = function stampUri(uri) {
-    return this.getToken().then(function (t) {
-      return uri + (uri.indexOf('?') !== -1 ? '&' : '?') + options.tokenParamName + '=' + t;
-    });
+    var t = this.getToken();
+    return uri + (uri.indexOf('?') !== -1 ? '&' : '?') + options.tokenParamName + '=' + t;
   };
 
   SessionManager.prototype.stampHeader = function stampHeader(headers) {
-    return this.getToken().then(function (t) {
-      return headers[options.tokenParamName] = t;
-    });
+    var t = this.getToken();
+    headers[options.tokenParamName] = t;
   };
 
   SessionManager.prototype.exit = function exit() {
@@ -314,10 +318,6 @@ var Session = function () {
     this.saveToken(data.token);
     this.saveRequest(data.savedRequest);
   }
-
-  Session.prototype.getToken = function getToken() {
-    return Promise.resolve(this.token);
-  };
 
   Session.prototype.saveToken = function saveToken(token) {
     this.token = token;

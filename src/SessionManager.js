@@ -1,6 +1,6 @@
 import Session from './Session'
 
-const namespace = '_session'
+const namespace = 'tainix/vue-session'
 
 var options = {
   tokenParamName: '',
@@ -62,24 +62,31 @@ class SessionManager {
 
   getSession(create, index = current) {
     if(index < sessions.length) {
-      return Promise.resolve(sessions[index])
+      return sessions[index]
     }
 
     if(create) {
       var session = new Session(options)
-      return saveSession(session)
+      saveSession(session)
+      return session
     }
 
-    return Promise.reject()
+    return null
   }
 
   getToken() {
-    return this.getSession().then(session => session.getToken())
+    var session = this.getSession()
+    if(session) {
+      return session.token
+    }
+
+    return null
   }
 
   toLoginOrContinue(to, from, next) {
     this.check().then(next).catch(() => {
-      this.getSession(true).then(session => session.saveRequest(to.fullPath))
+      var session = this.getSession(true)
+      session.saveRequest(to.fullPath)
 
       if(options.loginPage) {
         next(options.loginPage)
@@ -90,35 +97,44 @@ class SessionManager {
   }
 
   check() {
-    return this.getToken().then(token => options.checkFn(token).catch(this.logout))
+    var token = this.getToken()
+
+    if(token && options.checkFn) {
+      return options.checkFn(token).catch(this.logout)
+    }
+
+    return Promise.reject()
   }
 
   login(resp) {
     let token = resp.headers[options.tokenParamName]
-    return this.getSession(true).then(session => {
-      session.saveToken(token)
-      return session.removeRequest()
-    })
+
+    var session = this.getSession(true)
+    session.saveToken(token)
+
+    return session.removeRequest()
   }
 
   logout() {
-    return this.getToken.then(token => {
-      saveSession(null)
+    var token = this.getToken()
 
-      if(options.logoutFn) {
-        return options.logoutFn(token)
-      } else {
-        return Promise.resolve()
-      }
-    })
+    saveSession(null)
+
+    if(token && options.logoutFn) {
+      return options.logoutFn(token)
+    }
+
+    return Promise.resolve()
   }
 
   stampUri(uri) {
-    return this.getToken().then(t => uri + ((uri.indexOf('?') !== -1) ? '&' : '?') + options.tokenParamName + '=' + t)
+    var t = this.getToken()
+    return uri + ((uri.indexOf('?') !== -1) ? '&' : '?') + options.tokenParamName + '=' + t
   }
 
   stampHeader(headers) {
-    return this.getToken().then(t => headers[options.tokenParamName] = t)
+    var t = this.getToken()
+    headers[options.tokenParamName] = t
   }
 
   exit() {
