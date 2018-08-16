@@ -177,7 +177,7 @@ function saveSession(session, create) {
   if (create) {
     sessions.push(session);
   } else {
-    sessions.splice(index, 1, session);
+    sessions.splice(current, 1, session);
   }
 
   return Promise.resolve(session);
