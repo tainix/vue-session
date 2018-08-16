@@ -62,7 +62,7 @@ class SessionManager {
   }
 
   getToken() {
-    return getSession().then(session => session.getToken)
+    return getSession().then(session => session.getToken())
   }
 
   toLoginOrContinue(to, from, next, loginPage) {

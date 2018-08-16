@@ -215,7 +215,7 @@ var SessionManager = function () {
 
   SessionManager.prototype.getToken = function getToken() {
     return getSession().then(function (session) {
-      return session.getToken;
+      return session.getToken();
     });
   };
 
