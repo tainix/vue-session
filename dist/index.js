@@ -186,8 +186,9 @@ function getSession() {
   var index = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : current;
 
   if (index < sessions.length) {
-    return sessions[index];
+    return Promise.resolve(sessions[index]);
   }
+  return Promise.reject();
 }
 
 function putSession(session) {
@@ -213,7 +214,9 @@ var SessionManager = function () {
   };
 
   SessionManager.prototype.getToken = function getToken() {
-    return getSession().getToken();
+    return getSession().then(function (session) {
+      return session.getToken;
+    });
   };
 
   SessionManager.prototype.toLoginOrContinue = function toLoginOrContinue(to, from, next, loginPage) {
@@ -230,36 +233,31 @@ var SessionManager = function () {
   };
 
   SessionManager.prototype.check = function check() {
-    var session = getSession();
-    if (!session) {
-      return Promise.reject();
-    }
+    var _this = this;
 
-    var token = session.getToken();
-    if (!!token && options.checkFn) {
-      return options.checkFn(token).catch(this.logout);
-    }
-
-    return !!token ? Promise.resolve() : Promise.reject();
+    return this.getToken().then(function (token) {
+      return options.checkFn(token).catch(_this.logout);
+    });
   };
 
   SessionManager.prototype.login = function login(resp) {
     var token = resp.headers[options.tokenParamName];
-    var session = getSession();
-    session.saveToken(token);
-
-    return Promise.resolve(session.removeRequest());
+    return getSession().then(function (session) {
+      session.saveToken(token);
+      return session.removeRequest();
+    });
   };
 
   SessionManager.prototype.logout = function logout() {
-    var token = getSession().getToken();
-    putSession(null);
+    return this.getToken.then(function (token) {
+      putSession(null);
 
-    if (options.logoutFn) {
-      return options.logoutFn(token);
-    } else {
-      return Promise.resolve();
-    }
+      if (options.logoutFn) {
+        return options.logoutFn(token);
+      } else {
+        return Promise.resolve();
+      }
+    });
   };
 
   SessionManager.prototype.stamp = function stamp(uri) {
@@ -298,26 +296,29 @@ var Session = function () {
     }
 
     Session.prototype.getToken = function getToken() {
-        return this.token;
+        return Promise.resolve(this.token);
     };
 
     Session.prototype.saveToken = function saveToken(token) {
         this.token = token;
+        return Promise.resolve();
     };
 
     Session.prototype.saveRequest = function saveRequest(uri) {
         this.savedRequest = uri;
+        return Promise.resolve();
     };
 
     Session.prototype.removeRequest = function removeRequest() {
         var uri = this.savedRequest;
         this.savedRequest = null;
-        return uri;
+        return Promise.resolve(uri);
     };
 
     Session.prototype.clear = function clear() {
         this.token = null;
         this.savedRequest = null;
+        return Promise.resolve();
     };
 
     return Session;
