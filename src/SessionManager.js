@@ -1,4 +1,4 @@
-import merge from "loadsh/merge"
+import merge from "lodash/merge"
 
 import Session from './Session'
 
@@ -50,7 +50,7 @@ function saveSession(session, create) {
 class SessionManager {
 
   constructor(config) {
-    options = merge(options, config)
+    options = merge(config, options)
 
     load()
   }
