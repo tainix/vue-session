@@ -159,16 +159,23 @@ var options = {
   fnLogout: null
 };
 
-var storage;
+var storage = window.sessionStorage;
 var sessions = [];
 var current = 0;
 
 function load() {
+  var item = storage.getItem(namespace);
+  if (item) {
+    sessions.push(JSON.parse(item));
+  }
 
   console.debug('session data loaded');
 }
 
 function store() {
+  if (sessions.length) {
+    storage.setItem(namespace, JSON.stringify(sessions));
+  }
 
   console.debug('session data stored');
 }
